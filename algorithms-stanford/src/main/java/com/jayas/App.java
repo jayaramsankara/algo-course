@@ -1,17 +1,9 @@
 package com.jayas;
 
-import com.sun.codemodel.internal.fmt.JStaticFile;
-import com.sun.java.swing.plaf.windows.WindowsTabbedPaneUI;
-import com.sun.xml.internal.rngom.digested.DInterleavePattern;
-import com.sun.xml.internal.xsom.impl.ListSimpleTypeImpl;
 
-import javax.swing.*;
-import javax.swing.plaf.basic.BasicButtonUI;
-import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -43,6 +35,15 @@ public class App
         public Edge(int from, int to) {
             this.from = from;
             this.to = to;
+        }
+
+        @Override
+        public String toString() {
+            return "Edge{" +
+                    "from=" + from +
+                    ", to=" + to +
+                    ", isRemoved=" + isRemoved() +
+                    '}';
         }
 
         public int getFrom() {
@@ -78,7 +79,7 @@ public class App
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Edge edge = (Edge) o;
-            return ((from == edge.from && to == edge.to) || (from == edge.to && to == edge.from)) && isRemoved == edge.isRemoved;
+            return (/**(from == edge.from && to == edge.to) || **/ (from == edge.to && to == edge.from)) && isRemoved == edge.isRemoved;
         }
     }
 
@@ -144,7 +145,7 @@ public class App
 
 
 
-   List<String> fileContents = Files.readAllLines(Paths.get("./src/main/resources/TestMinCut.txt"), Charset.defaultCharset());
+   List<String> fileContents = Files.readAllLines(Paths.get("./src/main/resources/KargerMinCut.txt"), Charset.defaultCharset());
         List<Integer> vertices = new ArrayList<>(fileContents.size());
         List<List<Integer>> edges = new ArrayList<>(fileContents.size());
         Set<Edge> listOfEdges = new HashSet<>(fileContents.size());
@@ -152,6 +153,9 @@ public class App
         Map<Integer, List<Edge>> toVertexEdges = new HashMap<>(fileContents.size());
 
         for (String fileContent : fileContents) {
+            if(fileContent.trim().length()<1){
+                continue;
+            }
             String[] indices = fileContent.split("\\s+");
             int fromVertex = Integer.parseInt(indices[0]);
             vertices.add(fromVertex);
@@ -165,9 +169,9 @@ public class App
                 int toVertex = Integer.parseInt(indices[j]);
                 edgeVertices.add(toVertex);
                 Edge newEdge = new Edge(fromVertex,toVertex);
-                if(!listOfEdges.contains(newEdge)){
+//                if(!listOfEdges.contains(newEdge)){
                     listOfEdges.add(newEdge);
-                }
+//                }
                 fromEdges.add(newEdge);
                 List<Edge> toEdges = Optional.ofNullable(toVertexEdges.get(toVertex)).orElseGet(() -> {
                     List<Edge>  newToEdges = new ArrayList<>();
@@ -180,24 +184,69 @@ public class App
         }
 
         int numVertices = vertices.size();
+        System.out.println("Number of Vertices: "+numVertices);
+        System.out.println("Number of Edges: "+listOfEdges.size());
        for(int i =0;i<numVertices*Math.log(numVertices);i++) {
-            List<Integer> iVertices =  new ArrayList<>(numVertices);
-            iVertices.addAll(vertices);
-           List<List<Integer>> iEdges =  new ArrayList<>(numVertices);
-           for (List<Integer> edge : edges) {
-               List<Integer> iEdgeEntry = new ArrayList<>(edge.size());
-               iEdgeEntry.addAll(edge);
-               iEdges.add(iEdgeEntry);
-           }
+//            List<Integer> iVertices =  new ArrayList<>(numVertices);
+//            iVertices.addAll(vertices);
+//           List<List<Integer>> iEdges =  new ArrayList<>(numVertices);
+//           for (List<Integer> edge : edges) {
+//               List<Integer> iEdgeEntry = new ArrayList<>(edge.size());
+//               iEdgeEntry.addAll(edge);
+//               iEdges.add(iEdgeEntry);
+//           }
+//
+//           Set<Edge> edgesX = new HashSet<>(fileContents.size());
+//           listOfEdges.forEach(edge -> edgesX.add(new Edge(edge.from,edge.to)));
+//
+           System.out.println("Iteration #: "+(i+1));
+            int[] iMinCut = mincut(vertices,edges,numVertices,listOfEdges,fromVertexEdges,toVertexEdges);
 
-            int[] iMinCut = mincut(iVertices,iEdges,numVertices,listOfEdges,fromVertexEdges,toVertexEdges);
+
+
            printArr("Iteration #: "+(i+1)+" , Current Min Cuts: ",iMinCut);
             if((numOfMinCuts[2] == 0) || (iMinCut[2] < numOfMinCuts[2])) {
                 numOfMinCuts[0] = iMinCut[0];
                 numOfMinCuts[1] = iMinCut[1];
                 numOfMinCuts[2] = iMinCut[2];
             }
+           vertices.clear();
+           edges.clear();
+           listOfEdges.clear();
+           fromVertexEdges.clear();
+           toVertexEdges.clear();
+           for (String fileContent : fileContents) {
+               if(fileContent.trim().length()<1){
+                   continue;
+               }
+               String[] indices = fileContent.split("\\s+");
+               int fromVertex = Integer.parseInt(indices[0]);
+               vertices.add(fromVertex);
+               List<Edge> fromEdges = Optional.ofNullable(fromVertexEdges.get(fromVertex)).orElseGet(() -> {
+                   List<Edge>  newFromEdges = new ArrayList<>();
+                   fromVertexEdges.put(fromVertex,newFromEdges);
+                   return newFromEdges;
+               });
+               List<Integer> edgeVertices = new ArrayList<>();
+               for(int j=1; j< indices.length; j++){
+                   int toVertex = Integer.parseInt(indices[j]);
+                   edgeVertices.add(toVertex);
+                   Edge newEdge = new Edge(fromVertex,toVertex);
+                   if(!listOfEdges.contains(newEdge)){
+                       listOfEdges.add(newEdge);
+                   }
+                   fromEdges.add(newEdge);
+                   List<Edge> toEdges = Optional.ofNullable(toVertexEdges.get(toVertex)).orElseGet(() -> {
+                       List<Edge>  newToEdges = new ArrayList<>();
+                       toVertexEdges.put(toVertex,newToEdges);
+                       return newToEdges;
+                   });
+                   toEdges.add(newEdge);
+               }
+               edges.add(edgeVertices);
+           }
         }
+        numVertices = vertices.size();
 
 System.out.println("\n\nFinal RESULT \n\n");
         printArr("Min Cuts: ",numOfMinCuts);
@@ -215,32 +264,44 @@ System.out.println("\n\nFinal RESULT \n\n");
     // Min Cut Graph Algo
 
     private static int[] mincut(List<Integer> vertices, List<List<Integer>> edges,int numOfVertices,  Set<Edge> listOfEdges,Map<Integer, List<Edge>> fromVertexEdges ,Map<Integer, List<Edge>> toVertexEdges ) {
+        List<Edge>  randomEdges = listOfEdges.stream().collect(Collectors.toList());
+//        Collections.shuffle(randomEdges);
         int n = numOfVertices;
-//        int n = listOfEdges.size();
+//        int ne = randomEdges.size();
         Random random = new Random();
         for(int i=0; i< n-2; i++) {
-            System.out.println(vertices);
-            System.out.println(edges);
-            int aIdx = random.nextInt(n);
-            while(vertices.get(aIdx) == -1) {
-                aIdx  = random.nextInt(n);
-            }
-            int bIdx = aIdx;
-            while((bIdx == aIdx) || (vertices.get(bIdx) == -1)){
-                bIdx = random.nextInt(n);
-            }
-
-//            Edge edgeToRemove = listOfEdges.stream().collect(Collectors.toList()).get(random.nextInt(n));
-//            while(edgeToRemove.isRemoved()) {
-//                edgeToRemove = listOfEdges.stream().collect(Collectors.toList()).get(random.nextInt(n));
+            int ne = randomEdges.size();
+//            Collections.shuffle(randomEdges);
+//            System.out.println(vertices);
+//            System.out.println(edges);
+//            int aIdx = random.nextInt(n);
+//            while(vertices.get(aIdx) == -1) {
+//                aIdx  = random.nextInt(n);
 //            }
-//            int aIdx =edgeToRemove.getFrom() -1 ;
-//            int bIdx =edgeToRemove.getTo() -1;
+//            int bIdx = aIdx;
+//            while((bIdx == aIdx) || (vertices.get(bIdx) == -1)){
+//                bIdx = random.nextInt(n);
+//            }
+
+
+            Edge edgeToRemove = randomEdges.get(random.nextInt(ne));
+            System.out.println("Chosen Edge : "+edgeToRemove.from+","+edgeToRemove.to);
+//            while(edgeToRemove.isRemoved()) {
+//                System.out.println("Found Removed edge: "+edgeToRemove);
+//                edgeToRemove = randomEdges.get(random.nextInt(ne));
+//
+//            }
+            int aIdx =edgeToRemove.getFrom() -1 ;
+            int bIdx =edgeToRemove.getTo() -1;
 
             fuseVertices(vertices,edges,aIdx,bIdx, fromVertexEdges, toVertexEdges);
-//            edgeToRemove.removed();
-            System.out.println(vertices);
-            System.out.println(edges);
+            edgeToRemove.removed();
+//            randomEdges.remove(edgeToRemove);
+            //Remove all edges that are fused to same vertex.
+            randomEdges.removeIf(edge -> edge.isRemoved());
+
+//            System.out.println(vertices);
+//            System.out.println(edges);
         }
         List<Integer> finalVertices = vertices.stream().filter(x -> x > 0).collect(Collectors.toList());
         List<List<Integer>> finalEdges  = edges.stream().filter(x -> x.size()>0).collect(Collectors.toList());
@@ -251,13 +312,13 @@ System.out.println("\n\nFinal RESULT \n\n");
     }
 
     private static void fuseVertices(List<Integer> vertices, List<List<Integer>> edges,int aIdx, int bIdx, Map<Integer, List<Edge>> fromVertexEdgesMap ,Map<Integer, List<Edge>> toVertexEdgesMap) {
-        int idxToRetain = aIdx;
-        int idxToRemove = bIdx;
+        int idxToRetain = bIdx;
+        int idxToRemove = aIdx;
 //        if(bIdx < aIdx) {
 //            idxToRetain = bIdx;
 //            idxToRemove = aIdx;
 //        }
-        System.out.println("Fusing Index "+idxToRemove+" with "+idxToRetain);
+//        System.out.println("Fusing Index "+idxToRemove+" with "+idxToRetain);
         Integer vertexToRetain = vertices.get(idxToRetain);
 //        System.out.println("Vertex to Retain "+vertexToRetain);
         Integer vertexToRemove = vertices.get(idxToRemove);
@@ -292,10 +353,22 @@ System.out.println("\n\nFinal RESULT \n\n");
 
         vertices.set(idxToRemove, -1);
         List<Edge> fromEdgesToUpdate = Optional.ofNullable(fromVertexEdgesMap.get(vertexToRemove)).orElse(new ArrayList<>());
-        fromEdgesToUpdate.forEach(edge ->  edge.setFrom(vertexToRetain));
-        List<Edge> toEdgesToUpdate = Optional.ofNullable(toVertexEdgesMap.get(vertexToRemove)).orElse(new ArrayList<>());
-        fromEdgesToUpdate.forEach(edge ->  edge.setTo(vertexToRetain));
 
+        fromEdgesToUpdate.forEach(edge ->  {
+//            System.out.println("Setting  from of edge "+edge+ " to "+vertexToRetain);
+            edge.setFrom(vertexToRetain) ;
+        });
+        Optional.ofNullable(fromVertexEdgesMap.get(vertexToRetain)).orElse(new ArrayList<>()).addAll(fromEdgesToUpdate);
+        fromEdgesToUpdate.clear();
+//
+        List<Edge> toEdgesToUpdate = Optional.ofNullable(toVertexEdgesMap.get(vertexToRemove)).orElse(new ArrayList<>());
+        toEdgesToUpdate.forEach(edge ->  {
+//            System.out.println("Setting  to of edge "+edge+ " to "+vertexToRetain);
+            edge.setTo(vertexToRetain);
+        });
+        Optional.ofNullable(toVertexEdgesMap.get(vertexToRetain)).orElse(new ArrayList<>()).addAll(toEdgesToUpdate);
+        toEdgesToUpdate.clear();
+//        System.out.println("Fused Index "+idxToRemove+" with "+idxToRetain);
     }
 
 
