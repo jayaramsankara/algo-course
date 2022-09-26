@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 /**
  * Hello world!
  */
-public class App {
+public class DivideAndConquer {
 
     private static class Edge {
         private int from;
