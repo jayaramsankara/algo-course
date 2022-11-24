@@ -294,7 +294,39 @@ public class course2 {
 
         System.out.println("Hello Algo!");
 //        week1Assignment();
-        week2Assignment();
+//        week2Assignment();
+        week3Assignment();
+    }
+
+    private static void week3Assignment() throws IOException {
+        String fileName = "src/main/resources/median.txt";
+        PriorityQueue<Integer> hL = new PriorityQueue<>(5000, Comparator.reverseOrder());
+        PriorityQueue<Integer> hH = new PriorityQueue<>(5000);
+        List<Integer> medians = new ArrayList<>();
+        Stream<Integer> fileContents = Files.readAllLines(Paths.get(fileName), Charset.defaultCharset()).stream().filter(x ->  (x!= null) && (!x.isEmpty())).map(Integer::valueOf);
+        fileContents.forEach(num -> {
+            if((hL.isEmpty()) || (num <= hL.peek()) ){
+                hL.add(num);
+            } else  {
+                hH.add(num);
+            }
+            int diff = hL.size() - hH.size();
+            if( diff >= 0) {
+                for(int cnt=0;cnt<diff-1;cnt++){
+                    hH.add(hL.remove());
+                }
+
+            } else {
+                for(int cnt=0;cnt>diff;cnt--){
+                    hL.add(hH.remove());
+                }
+            }
+            medians.add(hL.peek());
+        });
+        System.out.println("Medians:");
+        System.out.println(medians);
+        System.out.println("Answer:");
+        System.out.println( medians.stream().reduce(0, (a, b) -> a+b,( x,y)  -> x) % 10000);
     }
 
     private static Comparator<Pair<Integer,Integer>> comparatorFor(int vMin) {
