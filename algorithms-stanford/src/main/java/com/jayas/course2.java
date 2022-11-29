@@ -12,6 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,13 +31,33 @@ public class course2 {
     private static Map<Integer, List<Set<Integer>>> leaders = new HashMap<>();
     private static List sccSizes = new LinkedList();
 
-    private static  class Pair<T,V> {
+    private static  class Pair<T,V>  implements  Comparable {
         private T first;
         private V second;
+
+        private BiFunction<Object,Object,Integer> hashFn;
 
         public Pair(T first, V second) {
             this.first =first;
             this.second = second;
+        }
+
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Pair)) return false;
+            Pair<?, ?> pair = (Pair<?, ?>) o;
+            return (Objects.equals(first, pair.first) && Objects.equals(second, pair.second)) || (Objects.equals(first, pair.second) && Objects.equals(second, pair.first));
+        }
+
+        @Override
+        public int hashCode() {
+            if(hashFn == null) {
+                return Objects.hash(first, second);
+            }
+            return hashFn.apply(first,second);
+
         }
 
         public T getFirst(){
@@ -45,11 +68,25 @@ public class course2 {
             return second;
         }
 
+        public  static <X,Y> Pair of (X one, Y two) {
+            return new Pair<>(one, two);
+        }
+
+        public  Pair<T,V> withHashFunction(BiFunction<Object,Object,Integer> hashFn) {
+            this.hashFn = hashFn;
+            return this;
+        }
+
         @Override
         public String toString() {
             return "(" + first +
                     "," + second +
                     ")";
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            return this.equals(o) ? 0 : 1;
         }
     }
     private static class Graph {
@@ -295,7 +332,34 @@ public class course2 {
         System.out.println("Hello Algo!");
 //        week1Assignment();
 //        week2Assignment();
-        week3Assignment();
+//        week3Assignment();
+        week4Assignment();
+    }
+
+    private static void week4Assignment() throws IOException {
+
+        String fileName = "src/main/resources/2sum.txt";
+        List<Long> allNumsS =  Files.lines(Paths.get(fileName)).map(Long::parseLong).sorted().collect(Collectors.toList());
+       Map<Long,Boolean> allNums = allNumsS.stream().collect(Collectors.toMap(x -> x, x -> true, (aBoolean, aBoolean2) -> aBoolean && aBoolean2));
+       Hashtable<Integer, Boolean> test = new Hashtable<>();
+       final AtomicLong result = new AtomicLong(0);
+        System.out.println("Starting figuring out # Distinct Numbers. Total : "+allNums.size());
+        allNumsS.stream().forEach(one -> {
+
+           for(int sum = -10000;sum<=10000;sum++){
+
+               long two = sum - one;
+               Pair nums = Pair.of(one,two);
+               if(allNums.containsKey(two) && (!test.containsKey(sum))){
+                   test.put(sum,true);
+                   result.incrementAndGet();
+                   break;
+               }
+           }
+       });
+
+       System.out.println("Result: "+result.get());
+
     }
 
     private static void week3Assignment() throws IOException {
