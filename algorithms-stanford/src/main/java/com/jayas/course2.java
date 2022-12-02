@@ -169,7 +169,7 @@ public class course2 {
         AtomicInteger t = new AtomicInteger(0);
         for(int i = n; i >0;i--){
             final int index = i;
-            //System.out.println("In Loop For Index  "+index);
+//            System.out.println("In Loop For Index  "+index);
             List<Set<Integer>> followersList = new LinkedList<>();
 
             leaders.putIfAbsent(i, followersList);
@@ -190,6 +190,7 @@ public class course2 {
         Stack<Integer> vertices = new Stack<>();
         Set<Integer> followers = new LinkedHashSet<>();
         followersList.add(followers);
+        List<Integer> path = new LinkedList<>();
         int cnt =0;
         if(!visitedVerticesList.get(vIdx-1) ) {
             vertices.add(vIdx);
@@ -200,18 +201,37 @@ public class course2 {
         while(vertices.size() > 0){
             cnt++;
             int idx = vertices.pop();
-            //System.out.println("Popped "+idx);
-            followers.add(idx);
-            //System.out.println("Followers  for "+vIdx+" : "+followers);
+//            System.out.println("Popped "+idx);
+            followers.add(idx); //Adding self to followers
+            path.add(idx);
+//            System.out.println("Followers  for "+vIdx+" : "+followers);
+//            System.out.println("Path  for "+vIdx+" : "+path);
             visitedVerticesList.set(idx-1,  true);
             List<Pair<Integer,Integer>> edges = graph.edges.get(idx);
-            if(edges == null) {
+            if((edges == null) || (edges.isEmpty())) {
 
                 if (!finishTimes.containsKey(idx)) {
                     t.incrementAndGet();
-                    //System.out.println("Setting finishing time for  "+idx+ " as "+t.intValue());
+//                    System.out.println("1. Setting finishing time for  "+idx+ " as "+t.intValue());
+                    path.remove(Integer.valueOf(idx));
                     finishTimes.put(idx, t.intValue());
                     revFinishTimes.put(t.intValue(),idx);
+                    for(int i = path.size()-1;i>=0;i--){
+                        int idxToFinish = path.get(i);
+                        if(!graph.edges.get(idxToFinish).stream().map(x -> x.first).filter(ix -> !visitedVerticesList.get(ix-1)).findFirst().isPresent()) {
+                            if(!finishTimes.containsKey(idxToFinish)) {
+                                t.incrementAndGet();
+//                                System.out.println("1. Setting finishing time for  "+idxToFinish+ " as "+t.intValue());
+                                finishTimes.put(idxToFinish, t.intValue());
+                                revFinishTimes.put(t.intValue(),idxToFinish);
+                            }
+                        } else {
+                            break;
+                        }
+
+                    }
+                    path.removeIf( finishTimes::containsKey);
+//                    System.out.println("1. Updated Path  for "+vIdx+" : "+path);
                 }
                 continue;
             }
@@ -222,35 +242,64 @@ public class course2 {
 
 //                    followers.add(edge);
                     vertices.add(edge.first);
-                    //System.out.println("Added  "+edge+ "for processing. ");
+//                    System.out.println("Added  "+edge+ "for processing. ");
                 }
-                else if(! isFinishTimeIteration) {
+                else  { // if(! isFinishTimeIteration) {
+//                    System.out.println("Ignoring  "+edge+ "as it is already  processed. ");
 
-                    if (edge.first == vIdx) {
-                        //ONE set of followers / unique SCC completed
-                        // re-init followers
-                        followers = new LinkedHashSet<>();
-                        followers.add(edge.first);
-                        followersList.add(followers);
 
-                    }
-                    else if (followers.contains(vIdx)) {
-                        followers.add(edge.first);
-                    }
+//                    if (edge.first == vIdx) { // Reached back the starting index
+//                        //ONE set of followers / unique SCC completed
+//                        // re-init followers
+//                        followers = new LinkedHashSet<>();
+////                        followers.add(edge.first);
+//                        followersList.add(followers);
+//
+//                    }
+//                    else if (followers.contains(vIdx)) {
+////                        followers.add(edge.first);
+//                    }
                 }
 
             }
+
             if((!hasEdgeToBeVisited) && (!finishTimes.containsKey(idx))){
+
+
                 t.incrementAndGet();
-                //System.out.println("Setting finishing time for  "+idx+ " as "+t.intValue());
+                path.remove(Integer.valueOf(idx));
+//                System.out.println("2. Setting finishing time for  "+idx+ " as "+t.intValue());
+
                 finishTimes.put(idx, t.intValue());
                 revFinishTimes.put(t.intValue(),idx);
+                for(int i = path.size()-1;i>=0;i--){
+                    int idxToFinish = path.get(i);
+//                    System.out.println("2. Check "+idxToFinish+ " for finish "+graph.edges.get(idxToFinish));
+                    if(!graph.edges.get(idxToFinish).stream().map(x -> x.first).filter(ix -> !visitedVerticesList.get(ix-1)).findFirst().isPresent()) {
+                        if(!finishTimes.containsKey(idxToFinish)) {
+                            t.incrementAndGet();
+//                            System.out.println("2. Setting finishing time for  "+idxToFinish+ " as "+t.intValue());
+                            finishTimes.put(idxToFinish, t.intValue());
+                            revFinishTimes.put(t.intValue(),idxToFinish);
+                        }
+                    } else {
+                        break;
+                    }
+
+                }
+                path.removeIf( finishTimes::containsKey);
+//                System.out.println("2. Updated Path  for "+vIdx+" : "+path);
+            }
+            if(vIdx == 874931){
+                System.out.println("Looping again..after "+idx+" . # Loops: "+cnt);
             }
 
-
         }
-        //System.out.println("Finished the DFS for idx "+vIdx);
-        //System.out.println("Followers for idx "+followersList);
+        if(vIdx == 874931){
+            System.out.println("Finished the DFS for idx "+vIdx);
+        }
+//        System.out.println("Finished the DFS for idx "+vIdx);
+//        System.out.println("Followers for idx "+followersList);
         Integer[] followersArr = new Integer[followers.size()];
         Integer[] followersIdx = followers.toArray(followersArr);
         int followersSize = followersIdx.length;
@@ -298,7 +347,7 @@ public class course2 {
             return;
         }
         Set<Integer> followers = null;
-        if(followers.isEmpty()){
+        if(followersList.isEmpty()){
             followers = new LinkedHashSet<>();
             followersList.add(followers);
         } else {
@@ -330,10 +379,10 @@ public class course2 {
     public static void main(String[] args) throws IOException {
 
         System.out.println("Hello Algo!");
-//        week1Assignment();
+        week1Assignment();
 //        week2Assignment();
 //        week3Assignment();
-        week4Assignment();
+//        week4Assignment();
     }
 
     private static void week4Assignment() throws IOException {
@@ -489,7 +538,8 @@ public class course2 {
         Graph graph = fileContentsAsGraph( "./src/main/resources/scc.txt");
 
         //System.out.println("Orig Graph - "+graph);
-        //System.out.println("Number of vertices - "+graph.numVertices());
+        System.out.println("Number of vertices - "+graph.numVertices());
+//        System.exit(0);
         visitedVertices = new boolean[graph.numVertices()];
         visitedVerticesList = new ArrayList<>(graph.numVertices());
         for(int cnt=0;cnt<visitedVertices.length;cnt++){
@@ -499,12 +549,13 @@ public class course2 {
         revFinishTimes = new HashMap<>();
         Graph revG = reverse(graph);
         //System.out.println("Reversed Graph - "+revG);
-        //System.out.println("Number of vertices After Reversal - "+revG.numVertices());
+        System.out.println("Number of vertices After Reversal - "+revG.numVertices());
+        System.out.println("Edges of 874931 after reverseal"+ revG.edges.get(874931));
 //        rDFS(revG);
         DFS(revG,i -> i,visitedVerticesList,true);
 
-        //System.out.println("# Finishing Times after first DFS : " + finishTimes.size());
-        //System.out.println("Finishing Times after first DFS : " + finishTimes);
+        System.out.println("# Finishing Times after first DFS : " + finishTimes.size());
+//        System.out.println("Finishing Times after first DFS : " + finishTimes);
         //System.out.println("Reverse Finishing Times after first DFS : " + revFinishTimes);
         visitedVertices = new boolean[graph.numVertices()];
         visitedVerticesList.clear();
@@ -514,7 +565,7 @@ public class course2 {
         leaders.clear();
         sccSizes.clear();
         Graph updatedKeyGraph = updateVertices(graph, finishTimes);
-        //System.out.println("Updated Keys Graph - "+updatedKeyGraph);
+//        System.out.println("Updated Keys Graph - "+updatedKeyGraph);
 //        rDFS(updatedKeyGraph);
         finishTimes.clear();
         Map<Integer,Integer> revFTToUse = new HashMap<>();
@@ -523,21 +574,21 @@ public class course2 {
         DFS(updatedKeyGraph,i -> i,visitedVerticesList,false);
 //        rDFS(updatedKeyGraph);
 
-        //System.out.println("Finished Second pass: " + leaders);
-        System.out.println("The SCCs with their leader: ");
-        leaders.forEach((k, v) -> {
-            if(v.size() > 0) {
-                System.out.print(revFTToUse.get(k) + " -> ");
-                v.forEach(val -> {
-                    val.forEach(val1 -> {
-                        System.out.print(revFTToUse.get(val1) + " ");
-
-                    });
-                    System.out.print(" , ");
-                });
-                System.out.println("");
-            }
-        });
+//        System.out.println("Finished Second pass: " + leaders);
+//        System.out.println("The SCCs with their leader: ");
+//        leaders.forEach((k, v) -> {
+//            if(v.size() > 0) {
+//                System.out.print(revFTToUse.get(k) + " -> ");
+//                v.forEach(val -> {
+//                    val.forEach(val1 -> {
+//                        System.out.print(revFTToUse.get(val1) + " ");
+//
+//                    });
+//                    System.out.print(" , ");
+//                });
+//                System.out.println("");
+//            }
+//        });
         sccSizes.sort(Comparator.reverseOrder());
         System.out.print("SCC Sizes: ");
         int maxCnt = Math.min(5,graph.edges.size());
