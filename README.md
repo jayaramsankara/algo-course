@@ -1,2 +1,2 @@
 # algo-course
-Programming Assignments for Algo Course
+Programming Assignments for  Coursera Algorithms Specializatoin Course (Stanford Online).
