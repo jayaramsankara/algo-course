@@ -23,11 +23,27 @@ public class course3 {
     public static void main(String[] args) throws IOException {
 
         System.out.println("Hello Algo!");
-        week1Assignment();
-//        week2Assignment();
+//        week1Assignment();
+        week2Assignment();
 //        week3Assignment();
 //        week4Assignment();
+
+//        System.out.println(maxIceCream( new int[]{18,6,3,1,2,5},20));
     }
+
+
+
+//    public static int maxIceCream(int[] costs, int coins) {
+//        List<Integer> costInfo = Arrays.stream(costs).boxed().sorted().collect(Collectors.toList());
+//        int num =0;
+//        for(int i =0; i<costInfo.size();i++) {
+//            int numBought  = costInfo.get(i) <=  coins ? 1 : 0;
+//            num = num + numBought;
+//            coins = coins - ((numBought == 0) ? 0 : costInfo.get(i));
+//        }
+//        return num;
+//
+//    }
 
     private static  class Pair<T,V>  implements  Comparable {
         private T first;
@@ -153,6 +169,118 @@ public class course3 {
         };
     }
 
+    private  static  Comparator<Pair<Integer, Integer>> minDistanceSortFn() {
+        return  new Comparator<Pair<Integer, Integer>>() {
+            @Override
+            public int compare(Pair<Integer,  Integer> j1, Pair<Integer,  Integer> j2) {
+                double j1dist =j1.second;
+                double j2dist =j2.second;
+                if(j1dist > j2dist) {
+                    return 1;
+                }
+                if(j1dist < j2dist) {
+                    return -1;
+                }
+                return 0;
+
+            }
+        };
+    }
+
+    private  static  Comparator<Map.Entry<Integer, List<Pair<Integer, Integer>>>> minDistanceGraphSortFn() {
+        return  new Comparator<Map.Entry<Integer, List<Pair<Integer, Integer>>>>() {
+            @Override
+            public int compare(Map.Entry<Integer, List<Pair<Integer, Integer>>> j1, Map.Entry<Integer, List<Pair<Integer, Integer>>> j2) {
+                double j1dist =j1.getValue().get(0).getSecond();
+                double j2dist =j2.getValue().get(0).getSecond();;
+                if(j1dist > j2dist) {
+                    return 1;
+                }
+                if(j1dist < j2dist) {
+                    return -1;
+                }
+                return 0;
+
+            }
+        };
+    }
+
+    private static class Edge {
+        private long v1 ;
+        private long v2;
+        private long dist;
+
+        public Edge(long node1, long node2, long  distance) {
+            this.v1 = node1;
+            this.v2 = node2;
+            this.dist = distance;
+
+        }
+    }
+
+    private static void week2Assignment() throws IOException {
+        String fileName = "./src/main/resources/clustering1.txt";
+
+//        part1Week2(fileName,2);
+//        part1Week2(fileName,3);
+        part1Week2(fileName,4);
+//        part2Week2(file1Name);
+
+    }
+
+    private static void part1Week2(String fileName, int numOfCluster) throws IOException {
+
+        List<String> fileContents = Files.readAllLines(Paths.get(fileName), Charset.defaultCharset());
+        long numOfNodes = Long.parseLong(fileContents.remove(0).trim());
+        Graph graph  = new Graph();
+
+        for (String fileContent : fileContents) {
+            String[] edgeInfo = fileContent.split("\\s+");
+            int node1 = Integer.parseInt(edgeInfo[0]);
+            int node2 = Integer.parseInt(edgeInfo[1]);
+            int cost = Integer.parseInt(edgeInfo[2]);
+            graph.addOrUpdateVertex(node1,node2,cost);
+            graph.addOrUpdateVertex(node2,node1,cost);
+
+        }
+        graph.edges.values().forEach(v -> v.sort(minDistanceSortFn())); // Sorted outgong edges based on min cost
+        while(graph.edges.size() > numOfCluster) {
+            //Find nodes to merge
+            Edge nodesToMerge = graph.edges.entrySet().stream().sorted(minDistanceGraphSortFn()).findFirst().map(x -> new Edge(x.getKey(), x.getValue().get(0).first, x.getValue().get(0).second)).get();
+            // Merge Nodes
+            mergeNodesInGraph(graph, nodesToMerge.v1, nodesToMerge.v2);
+        }
+        //Now sort based on dist and get max spacing.
+       long maxDist=  graph.edges.entrySet().stream().sorted(minDistanceGraphSortFn()).findFirst().get().getValue().get(0).getSecond();
+        System.out.println("Max Distance after creating "+numOfCluster+" clusters : "+maxDist);
+
+
+
+
+
+    }
+
+    private static void mergeNodesInGraph (Graph graph, long node1, long node2) {
+        int n1 = Long.valueOf(node1).intValue();
+        int n2 = Long.valueOf(node2).intValue();
+        List<Pair<Integer,Integer>> node2Vals = graph.edges.remove(n2);
+        List<Pair<Integer,Integer>>  node1Vals = graph.edges.get(n1);
+
+        node2Vals.removeIf(p -> p.first == n1|| p.first == n2);
+        node1Vals.removeIf(p -> p.first == n2);
+        node1Vals.addAll(node2Vals);
+        node1Vals.sort(minDistanceSortFn());
+
+        node2Vals.forEach(i ->  {
+            List<Pair<Integer,Integer>> iVal = graph.edges.get(i.getFirst());
+            Stream<Pair<Integer,Integer>> iValExtraS = iVal.stream().filter(p -> p.first == n2).map(p1 -> Pair.of(n1, p1.second));//.collect(Collectors.<Pair<Integer,Integer>>toList());
+            List<Pair<Integer,Integer>> iValExtra = iValExtraS.collect(Collectors.toList());
+            iVal.removeIf(p -> p.first == n2);
+            iVal.addAll(iValExtra);
+        });
+
+    }
+
     private  static void week1Assignment() throws IOException {
         String file1Name = "./src/main/resources/jobs.txt";
         String file2Name = "./src/main/resources/edges.txt";
@@ -162,6 +290,8 @@ public class course3 {
         part3Week1(file2Name);
 
     }
+
+
 
     private static void part1Week1(String fileName) throws IOException  {
         schedulingAlgoGen(fileName, (a, b) -> (a - b)*1.0D);
